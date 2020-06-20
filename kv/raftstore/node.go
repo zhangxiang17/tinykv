@@ -39,11 +39,11 @@ func NewNode(system *Raftstore, cfg *config.Config, schedulerClient scheduler_cl
 }
 
 func (n *Node) Start(ctx context.Context, engines *engine_util.Engines, trans Transport, snapMgr *snap.SnapManager) error {
-	storeID, err := n.checkStore(engines)
+	storeID, err := n.checkStore(engines) //假如是属于store restart 类型，会取meta中的clusterId进行比对
 	if err != nil {
 		return err
 	}
-	if storeID == util.InvalidID {
+	if storeID == util.InvalidID { //如果尚未初始化此节点，需要初始化
 		storeID, err = n.bootstrapStore(ctx, engines)
 	}
 	if err != nil {
@@ -63,7 +63,7 @@ func (n *Node) Start(ctx context.Context, engines *engine_util.Engines, trans Tr
 			return err
 		}
 	}
-
+	// 向scheduler上报，已存储其节点信息，之后可以向其路由数据
 	err = n.schedulerClient.PutStore(ctx, n.store)
 	if err != nil {
 		return err

@@ -176,14 +176,18 @@ func (rs *RaftStorage) Snapshot(stream tinykvpb.TinyKv_SnapshotServer) error {
 	return err
 }
 
+// 初始化 RaftStorage 相关
+// 比如: rs.raftRouter, rs.raftSystem, rs.snapManager, rs.snapWorker, rs.node
 func (rs *RaftStorage) Start() error {
 	cfg := rs.config
+	// 创建与scheduler的联系，获取注册中心的相关信息，与集群信息
 	schedulerClient, err := scheduler_client.NewClient(strings.Split(cfg.SchedulerAddr, ","), "")
 	if err != nil {
 		return err
 	}
 	rs.raftRouter, rs.raftSystem = raftstore.CreateRaftstore(cfg)
-
+	// worker 会创建一个 channel, 用于接收/发送 task,
+	// resolverRunner 是一种Handler, 用于处理不同类型的事件
 	rs.resolveWorker = worker.NewWorker("resolver", &rs.wg)
 	resolveSender := rs.resolveWorker.Sender()
 	resolveRunner := newResolverRunner(schedulerClient)
@@ -198,6 +202,8 @@ func (rs *RaftStorage) Start() error {
 	raftClient := newRaftClient(cfg)
 	trans := NewServerTransport(raftClient, snapSender, rs.raftRouter, resolveSender)
 
+	//初始化本地的store存储
+	// storeid: scheduler分配的
 	rs.node = raftstore.NewNode(rs.raftSystem, rs.config, schedulerClient)
 	err = rs.node.Start(context.TODO(), rs.engines, trans, rs.snapManager)
 	if err != nil {
@@ -211,7 +217,7 @@ func (rs *RaftStorage) Stop() error {
 	rs.snapWorker.Stop()
 	rs.node.Stop()
 	rs.resolveWorker.Stop()
-	rs.wg.Wait()
+	rs.wg.Wait() // 此处等待所有的goroutine退出
 	if err := rs.engines.Raft.Close(); err != nil {
 		return err
 	}

@@ -6,6 +6,7 @@ import (
 
 	"github.com/pingcap-incubator/tinykv/kv/config"
 	"github.com/pingcap-incubator/tinykv/kv/storage"
+	"github.com/pingcap-incubator/tinykv/kv/storage/raft_storage"
 	"github.com/pingcap-incubator/tinykv/kv/storage/standalone_storage"
 	"github.com/pingcap-incubator/tinykv/kv/util/engine_util"
 	"github.com/pingcap-incubator/tinykv/proto/pkg/kvrpcpb"
@@ -48,6 +49,7 @@ func cleanUpTestData(conf *config.Config) error {
 }
 
 func TestRawGet1(t *testing.T) {
+	// 创建单节点后端存储
 	conf := config.NewTestConfig()
 	s := standalone_storage.NewStandAloneStorage(conf)
 	s.Start()
@@ -65,6 +67,18 @@ func TestRawGet1(t *testing.T) {
 	resp, err := server.RawGet(nil, req)
 	assert.Nil(t, err)
 	assert.Equal(t, []byte{42}, resp.Value)
+}
+
+func TestRawGetRaftStorage(t *testing.T) {
+	// 创建基于raft后端存储
+	conf := config.NewTestConfig()
+	s := raft_storage.NewRaftStorage(conf)
+
+	s.Start()
+	// 清理测试数据，todo 如何清理分布式的测试数据
+	defer cleanUpTestData(conf)
+	defer s.Stop()
+
 }
 
 func TestRawGetNotFound1(t *testing.T) {

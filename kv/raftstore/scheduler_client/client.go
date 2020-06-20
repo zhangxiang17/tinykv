@@ -110,6 +110,7 @@ func NewClient(pdAddrs []string, tag string) (Client, error) {
 		err     error
 		members *schedulerpb.GetMembersResponse
 	)
+	// 此处重试，去请求scheduler 去获取etcd的各种member&leader
 	for i := 0; i < maxRetryCount; i++ {
 		if members, err = c.updateLeader(); err == nil {
 			break

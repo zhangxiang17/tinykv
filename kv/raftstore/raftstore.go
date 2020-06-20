@@ -248,7 +248,7 @@ func (bs *Raftstore) start(
 		schedulerClient:      schedulerClient,
 		tickDriverSender:     bs.tickDriver.newRegionCh,
 	}
-	regionPeers, err := bs.loadPeers()
+	regionPeers, err := bs.loadPeers() //查询所有的Peers
 	if err != nil {
 		return err
 	}

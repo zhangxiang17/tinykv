@@ -8,8 +8,8 @@ type Task interface{}
 
 type Worker struct {
 	name     string
-	sender   chan<- Task
-	receiver <-chan Task
+	sender   chan<- Task //单向只写通道
+	receiver <-chan Task //单向只读通道
 	closeCh  chan struct{}
 	wg       *sync.WaitGroup
 }
@@ -22,6 +22,8 @@ type Starter interface {
 	Start()
 }
 
+// 关注一下此处 wait.group的add方法
+// 这里worker 角色，有start & stop, 如何停止这个work呢，就是发送一个 stop方法，
 func (w *Worker) Start(handler TaskHandler) {
 	w.wg.Add(1)
 	go func() {
